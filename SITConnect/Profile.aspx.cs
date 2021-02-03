@@ -63,7 +63,7 @@ namespace SITConnect
         protected void displayUserProfile(string email_info)
         {
             SqlConnection connection = new SqlConnection(ASConnectionString);
-            string sql = "SELECT * FROM Registration WHERE Email=@Email_Info";
+            string sql = "SELECT * FROM Account WHERE Email=@Email_Info";
             SqlCommand command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Email_Info", email_info);
             try

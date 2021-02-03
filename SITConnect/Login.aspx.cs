@@ -13,6 +13,9 @@ using System.Web.UI.WebControls;
 
 namespace SITConnect
 {
+    // int loginAttempt = 0;
+    // int loginLeft = 0;
+
     public partial class Login : System.Web.UI.Page
     {
         string ASConnection = System.Configuration.ConfigurationManager.ConnectionStrings["ASConnection"].ConnectionString;
@@ -76,7 +79,7 @@ namespace SITConnect
         {
             string h = null;
             SqlConnection connection = new SqlConnection(ASConnection);
-            string sql = "select PasswordHash FROM Registration WHERE Email=@Email_Info";
+            string sql = "select PasswordHash FROM Account WHERE Email=@Email_Info";
             SqlCommand command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Email_Info", email_info);
             try
@@ -110,7 +113,7 @@ namespace SITConnect
         {
             string s = null;
             SqlConnection connection = new SqlConnection(ASConnection);
-            string sql = "select PASSWORDSALT FROM Registration WHERE Email=@Email_Info";
+            string sql = "select PASSWORDSALT FROM Account WHERE Email=@Email_Info";
             SqlCommand command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Email_Info", email_info);
             try

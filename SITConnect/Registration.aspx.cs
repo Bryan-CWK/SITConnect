@@ -35,7 +35,7 @@ namespace SITConnect
             {
                 using (SqlConnection con = new SqlConnection(ASConnection))
                 {
-                    using (SqlCommand cmd = new SqlCommand("INSERT INTO Registration VALUES (@FirstName,@LastName,@Email,@CCNo,@CVV,@ExpiryDate,@PasswordHash,@PasswordSalt,@DoB,@IV,@Key)"))
+                    using (SqlCommand cmd = new SqlCommand("INSERT INTO Account VALUES (@FirstName,@LastName,@Email,@CCNo,@CVV,@ExpiryDate,@PasswordHash,@PasswordSalt,@DoB,@IV,@Key,@LockStatus,@LockCheckTimer,@LockLeftTimer)"))
                     {
                         using (SqlDataAdapter sda = new SqlDataAdapter())
                         {
@@ -51,6 +51,9 @@ namespace SITConnect
                             cmd.Parameters.AddWithValue("@DoB", dob_textbox.Text.Trim());
                             cmd.Parameters.AddWithValue("@IV", Convert.ToBase64String(IV));
                             cmd.Parameters.AddWithValue("@Key", Convert.ToBase64String(Key));
+                            cmd.Parameters.AddWithValue("@LockStatus", 0);
+                            cmd.Parameters.AddWithValue("@LockCheckTimer", DateTime.Now);
+                            cmd.Parameters.AddWithValue("@LockLeftTimer", DateTime.Now);
                             cmd.Connection = con;
                             con.Open();
                             cmd.ExecuteNonQuery();
@@ -110,7 +113,7 @@ namespace SITConnect
             {
                 checker_label.Text = "please enter a password";
             }
-            else if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "" && email_textbox.Text.ToString() == "" && ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "" && dob_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
+            if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "" && email_textbox.Text.ToString() == "" && ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "" && dob_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
             {
                 checker_label.Text = "actually enter something";
             }
