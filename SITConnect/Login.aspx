@@ -41,14 +41,13 @@
                     </td>
                     <td>
                         <asp:Button ID="login_button" runat="server" OnClick="login_button_Click" Text="Login" />
+                        <asp:Button ID="register_button" runat="server" OnClick="register_button_Click" Text="Regiser a account" />
                     </td>
                 </tr>
             </table>
         </div>
 
         <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response" />
-
-    </form>
 
     <script>
         grecaptcha.ready(function () {
@@ -58,5 +57,9 @@
         });
     </script>
 
-</body>
+        <asp:Label ID="catch_label" runat="server"></asp:Label>
+
+    </form>
+
+    </body>
 </html>

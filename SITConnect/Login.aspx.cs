@@ -13,13 +13,13 @@ using System.Web.UI.WebControls;
 
 namespace SITConnect
 {
-    // int loginAttempt = 0;
-    // int loginLeft = 0;
-
     public partial class Login : System.Web.UI.Page
     {
         string ASConnection = System.Configuration.ConfigurationManager.ConnectionStrings["ASConnection"].ConnectionString;
         public string success { get; set; }
+
+        static int loginCounter = 0;
+        static int loginLeft = 0;
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -47,6 +47,10 @@ namespace SITConnect
                 SHA512Managed hashing = new SHA512Managed();
                 string dbHash = getDBHash(email_info);
                 string dbSalt = getDBSalt(email_info);
+
+                string status = checkLockStatus(HttpUtility.HtmlEncode(email_textbox.Text.ToString().Trim()));
+                bool checker = bool.Parse(status);
+
                 try
                 {
                     if (dbSalt != null && dbSalt.Length > 0 && dbHash != null && dbHash.Length > 0)
@@ -54,17 +58,61 @@ namespace SITConnect
                         string pwdWithSalt = pwd + dbSalt;
                         byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
                         string userHash = Convert.ToBase64String(hashWithSalt);
-                        if (userHash.Equals(dbHash))
-                        {
-                            Session["Email"] = email_info;
-                            Response.Redirect("Profile.aspx", false);
-                        }
+                        
+                        if (checker == false)
+                        { 
+                            if (userHash.Equals(dbHash))
+                            {
+                                Session["Email"] = email_info;
+                                Response.Redirect("Profile.aspx", false);
+                            }
+                            else
+                            { 
+                                if (loginCounter == 3)
+                                {
+                                    lockStatus(email_info);
+                                    loginCounter = 0;
 
-                        else
-                        {
-                            checker_label.Text = "Userid or password is not valid. Please try again.";
-                            Response.Redirect("Login.aspx", false);
+                                    DateTime timeNow = DateTime.Now;
+                                    DateTime timeLeft = DateTime.Now.AddMinutes(5);
+                                    lockStartTimer(timeNow, email_info);
+                                    lockEndTimer(timeLeft, email_info);
+                                    TimeSpan remainingTime = lockTimeLeft(timeNow, timeLeft);
+
+                                    catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
+                                }
+                                
+                                else if (checker == true)
+                                {
+                                    catch_label.Text = "your account is locked";
+                                }
+                                
+                                else
+                                {
+                                    loginCounter = loginCounter + 1;
+                                    loginLeft = 4 - loginCounter;
+                                    catch_label.Text = "wrong email or password";
+                                }
+                            }
                         }
+                        
+                        else if (checker == true)
+                        {
+                            DateTime startTime = DateTime.Now;
+                            DateTime endTime = lockEndTime(email_info);
+                            TimeSpan remainingTime = lockTimeLeft(startTime, endTime);
+
+                            catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
+
+                            if (remainingTime <= TimeSpan.Zero)
+                            {
+                                unlockStatus(email_textbox.Text);
+                            }
+                        }
+                    } 
+                    else
+                    {
+                        catch_label.Text = "invalid password";
                     }
                 }
                 catch (Exception ex)
@@ -141,6 +189,110 @@ namespace SITConnect
             return s;
         }
 
+        private string checkLockStatus(string email_info)
+        {
+            string s = null;
+
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "SELECT LockStatus FROM Account WHERE Email=@Email_Info";
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Email_Info", email_info);
+
+            connection.Open();
+            try
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        s = reader["LockStatus"].ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+            finally { connection.Close(); }
+            return s;
+        }
+
+        private void unlockStatus(string email_info)
+        {
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "UPDATE Account SET LockStatus=0 WHERE EMAIL=@Email_info";
+            connection.Open();
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Email_info", email_info);
+            command.ExecuteNonQuery();
+        }
+
+        private void lockStatus(string email_info)
+        {
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "UPDATE Account SET LockStatus=1 WHERE EMAIL=@Email_info";
+            connection.Open();
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Email_info", email_info);
+            command.ExecuteNonQuery();
+        }
+
+        private void lockStartTimer(DateTime now, string email_info)
+        {
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "UPDATE Account SET LockCheckTimer=@time_now WHERE Email=@Email_info";
+            connection.Open();
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@time_now", now);
+            command.Parameters.AddWithValue("@Email_Info", email_info);
+            command.ExecuteNonQuery();       
+        }
+
+        private void lockEndTimer(DateTime now, string email_info)
+        {
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "UPDATE Account SET LockLeftTimer=@time_now WHERE Email=@Email_info";
+            connection.Open();
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@time_now", now);
+            command.Parameters.AddWithValue("@Email_info", email_info);
+            command.ExecuteNonQuery();
+        }
+
+        private DateTime lockEndTime(string email_info)
+        {
+            string time = null;
+            SqlConnection connection = new SqlConnection(ASConnection);
+            string sql = "SELECT LockLeftTimer FROM Account WHERE Email=@Email_info";
+            SqlCommand command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Email_info", email_info);
+            connection.Open();
+            try
+            {
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        time = reader["LockLeftTimer"].ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.ToString());
+            }
+            finally { }
+            DateTime remainingTime = Convert.ToDateTime(time);
+            return remainingTime;
+        }
+
+
+        private TimeSpan lockTimeLeft(DateTime startTime, DateTime endTime)
+        {
+            TimeSpan remainingTime = endTime - startTime;
+            return remainingTime;
+        }
+
         public bool ValidateCaptcha()
         {
             bool result = true;
@@ -169,6 +321,11 @@ namespace SITConnect
             {
                 throw ex;
             }
+        }
+
+        protected void register_button_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("Registration.aspx", false);
         }
     }
 }
