@@ -78,8 +78,8 @@ namespace SITConnect
                                         lockStatus(email_info);
                                         loginCounter = 0;
                                         lockStartTimer(DateTime.Now, email_info);
-                                        lockEndTimer(DateTime.Now.AddMinutes(5), email_info);
-                                        TimeSpan remainingTime = lockTimeLeft(DateTime.Now, DateTime.Now.AddMinutes(5));
+                                        lockEndTimer(DateTime.Now.AddMinutes(3), email_info);
+                                        TimeSpan remainingTime = lockTimeLeft(DateTime.Now, DateTime.Now.AddMinutes(3));
 
                                         catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
                                     }
@@ -100,7 +100,7 @@ namespace SITConnect
 
                             else if (checker == true)
                             {
-                                TimeSpan remainingTime = lockTimeLeft(DateTime.Now, DateTime.Now.AddMinutes(5));
+                                TimeSpan remainingTime = lockTimeLeft(DateTime.Now, lockEndTime(email_info));
 
                                 catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
 
