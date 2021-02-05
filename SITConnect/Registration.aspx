@@ -41,7 +41,7 @@
         
     </script>
 
-    <script src="https://www.google.com/recaptcha/api.js?render=6LfgFUUaAAAAAKy_4De0VHZhyH1BYMPcyyNt1jJR"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=6Lf9ukoaAAAAALBJl3lfFT8mOZujY5zPEZpbBrPh"></script>
 
     <style type="text/css">
         .auto-style6 {
@@ -140,7 +140,7 @@
 
     <script>
         grecaptcha.ready(function () {
-            grecaptcha.execute('6LfgFUUaAAAAAKy_4De0VHZhyH1BYMPcyyNt1jJR', { action: 'Login' }).then(function (token) {
+            grecaptcha.execute('6Lf9ukoaAAAAALBJl3lfFT8mOZujY5zPEZpbBrPh', { action: 'Login' }).then(function (token) {
                 document.getElementById("g-recaptcha-response").value = token;
             });
         });

@@ -23,103 +23,108 @@ namespace SITConnect
 
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            
         }
 
         protected void login_button_Click(object sender, EventArgs e)
         {
-            if (email_textbox.Text.ToString() == "")
+            if (ValidateCaptcha())
             {
-                checker_label.Text = "please enter a valid email";
-            }
-            if (password_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter a valid password";
-            }
-            if (email_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter your profile details";
+                if (email_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter a valid email";
+                }
+                if (password_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter a valid password";
+                }
+                if (email_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter your profile details";
+                }
+                else
+                {
+                    string pwd = password_textbox.Text.ToString().Trim();
+                    string email_info = email_textbox.Text.ToString().Trim();
+                    SHA512Managed hashing = new SHA512Managed();
+                    string dbHash = getDBHash(email_info);
+                    string dbSalt = getDBSalt(email_info);
+
+                    string status = checkLockStatus(HttpUtility.HtmlEncode(email_textbox.Text.ToString().Trim()));
+                    bool checker = bool.Parse(status);
+
+                    try
+                    {
+                        if (dbSalt != null && dbSalt.Length > 0 && dbHash != null && dbHash.Length > 0)
+                        {
+                            string pwdWithSalt = pwd + dbSalt;
+                            byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
+                            string userHash = Convert.ToBase64String(hashWithSalt);
+
+                            if (checker == false)
+                            {
+                                if (userHash.Equals(dbHash))
+                                {
+                                    Session["Email"] = email_info;
+                                    string guid = Guid.NewGuid().ToString();
+                                    Session["AuthToken"] = guid;
+                                    Response.Cookies.Add(new HttpCookie("AuthToken", guid));
+                                    Response.Redirect("Profile.aspx", false);
+                                }
+                                else
+                                {
+                                    if (loginCounter == 3)
+                                    {
+                                        lockStatus(email_info);
+                                        loginCounter = 0;
+                                        lockStartTimer(DateTime.Now, email_info);
+                                        lockEndTimer(DateTime.Now.AddMinutes(5), email_info);
+                                        TimeSpan remainingTime = lockTimeLeft(DateTime.Now, DateTime.Now.AddMinutes(5));
+
+                                        catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
+                                    }
+
+                                    else if (checker == true)
+                                    {
+                                        catch_label.Text = "your account is locked";
+                                    }
+
+                                    else
+                                    {
+                                        loginCounter = loginCounter + 1;
+                                        loginLeft = 4 - loginCounter;
+                                        catch_label.Text = "wrong email or password";
+                                    }
+                                }
+                            }
+
+                            else if (checker == true)
+                            {
+                                TimeSpan remainingTime = lockTimeLeft(DateTime.Now, DateTime.Now.AddMinutes(5));
+
+                                catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
+
+                                if (remainingTime <= TimeSpan.Zero)
+                                {
+                                    unlockStatus(email_textbox.Text);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            catch_label.Text = "invalid password";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(ex.ToString());
+                    }
+                    finally { }
+                }
             }
             else
             {
-                string pwd = password_textbox.Text.ToString().Trim();
-                string email_info = email_textbox.Text.ToString().Trim();
-                SHA512Managed hashing = new SHA512Managed();
-                string dbHash = getDBHash(email_info);
-                string dbSalt = getDBSalt(email_info);
-
-                string status = checkLockStatus(HttpUtility.HtmlEncode(email_textbox.Text.ToString().Trim()));
-                bool checker = bool.Parse(status);
-
-                try
-                {
-                    if (dbSalt != null && dbSalt.Length > 0 && dbHash != null && dbHash.Length > 0)
-                    {
-                        string pwdWithSalt = pwd + dbSalt;
-                        byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
-                        string userHash = Convert.ToBase64String(hashWithSalt);
-                        
-                        if (checker == false)
-                        { 
-                            if (userHash.Equals(dbHash))
-                            {
-                                Session["Email"] = email_info;
-                                Response.Redirect("Profile.aspx", false);
-                            }
-                            else
-                            { 
-                                if (loginCounter == 3)
-                                {
-                                    lockStatus(email_info);
-                                    loginCounter = 0;
-
-                                    DateTime timeNow = DateTime.Now;
-                                    DateTime timeLeft = DateTime.Now.AddMinutes(5);
-                                    lockStartTimer(timeNow, email_info);
-                                    lockEndTimer(timeLeft, email_info);
-                                    TimeSpan remainingTime = lockTimeLeft(timeNow, timeLeft);
-
-                                    catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
-                                }
-                                
-                                else if (checker == true)
-                                {
-                                    catch_label.Text = "your account is locked";
-                                }
-                                
-                                else
-                                {
-                                    loginCounter = loginCounter + 1;
-                                    loginLeft = 4 - loginCounter;
-                                    catch_label.Text = "wrong email or password";
-                                }
-                            }
-                        }
-                        
-                        else if (checker == true)
-                        {
-                            DateTime startTime = DateTime.Now;
-                            DateTime endTime = lockEndTime(email_info);
-                            TimeSpan remainingTime = lockTimeLeft(startTime, endTime);
-
-                            catch_label.Text = "your account has been locked due to 3 failed attempts <br> lock duration - " + remainingTime + " minutes";
-
-                            if (remainingTime <= TimeSpan.Zero)
-                            {
-                                unlockStatus(email_textbox.Text);
-                            }
-                        }
-                    } 
-                    else
-                    {
-                        catch_label.Text = "invalid password";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception(ex.ToString());
-                }
-                finally { }
+                catch_label.Text = "bot";
             }
         }
 
@@ -299,8 +304,7 @@ namespace SITConnect
 
             string captchaResponse = Request.Form["g-recaptcha-response"];
 
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create
-            (" https://www.google.com/recaptcha/api/siteverify?secret=6LfgFUUaAAAAABwf3QXQ7t9YnbioM3Hxvv-XoNrU & response=" + captchaResponse);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("https://www.google.com/recaptcha/api/siteverify?secret=6Lf9ukoaAAAAAKAFHes0TPGI8qL8cNetqqmg2MuF &response=" + captchaResponse);
 
             try
             {

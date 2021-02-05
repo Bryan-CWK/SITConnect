@@ -92,61 +92,67 @@ namespace SITConnect
         }
 
         protected void register_button_Click1(object sender, EventArgs e)
-        {
-            if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "")
+        { 
+            if (ValidateCaptcha())
             {
-                checker_label.Text = "please enter your name details";
-            }
-            if (email_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter your email";
-            }
-            if (ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter your credit card details";
-            }
-            if (dob_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter your date of birth";
-            }
-            if (password_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "please enter a password";
-            }
-            if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "" && email_textbox.Text.ToString() == "" && ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "" && dob_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
-            {
-                checker_label.Text = "actually enter something";
+                if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter your name details";
+                }
+                if (email_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter your email";
+                }
+                if (ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter your credit card details";
+                }
+                if (dob_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter your date of birth";
+                }
+                if (password_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "please enter a password";
+                }
+                if (fName_textbox.Text.ToString() == "" && lName_textbox.Text.ToString() == "" && email_textbox.Text.ToString() == "" && ccNo_textbox.Text.ToString() == "" && cvv_textbox.Text.ToString() == "" && ccED_textbox.Text.ToString() == "" && dob_textbox.Text.ToString() == "" && password_textbox.Text.ToString() == "")
+                {
+                    checker_label.Text = "actually enter something";
+                }
+                else
+                {
+                    //string pwd = get value from your Textbox
+                    string pwd = password_textbox.Text.ToString().Trim(); ;
+
+                    //Generate random "salt"
+                    RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+                    byte[] saltByte = new byte[8];
+
+                    //Fills array of bytes with a cryptographically strong sequence of random values.
+                    rng.GetBytes(saltByte);
+                    salt = Convert.ToBase64String(saltByte);
+
+                    SHA512Managed hashing = new SHA512Managed();
+
+                    string pwdWithSalt = pwd + salt;
+                    byte[] plainHash = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwd));
+                    byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
+
+                    finalHash = Convert.ToBase64String(hashWithSalt);
+
+                    RijndaelManaged cipher = new RijndaelManaged();
+                    cipher.GenerateKey();
+                    Key = cipher.Key;
+                    IV = cipher.IV;
+
+                    createAccount();
+                    display_label.Text = "account successfully created";
+                }
             }
             else
             {
-                //string pwd = get value from your Textbox
-                string pwd = password_textbox.Text.ToString().Trim(); ;
-
-                //Generate random "salt"
-                RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
-                byte[] saltByte = new byte[8];
-
-                //Fills array of bytes with a cryptographically strong sequence of random values.
-                rng.GetBytes(saltByte);
-                salt = Convert.ToBase64String(saltByte);
-
-                SHA512Managed hashing = new SHA512Managed();
-
-                string pwdWithSalt = pwd + salt;
-                byte[] plainHash = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwd));
-                byte[] hashWithSalt = hashing.ComputeHash(Encoding.UTF8.GetBytes(pwdWithSalt));
-
-                finalHash = Convert.ToBase64String(hashWithSalt);
-
-                RijndaelManaged cipher = new RijndaelManaged();
-                cipher.GenerateKey();
-                Key = cipher.Key;
-                IV = cipher.IV;
-
-                createAccount();
-                display_label.Text = "account successfully created";
+                checker_label.Text = "bot";
             }
-
         }
 
         protected void route_button_Click1(object sender, EventArgs e)
@@ -160,8 +166,7 @@ namespace SITConnect
 
             string captchaResponse = Request.Form["g-recaptcha-response"];
 
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create
-            (" https://www.google.com/recaptcha/api/siteverify?secret=6LfgFUUaAAAAABwf3QXQ7t9YnbioM3Hxvv-XoNrU & response=" + captchaResponse);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create("https://www.google.com/recaptcha/api/siteverify?secret=6Lf9ukoaAAAAAKAFHes0TPGI8qL8cNetqqmg2MuF &response=" + captchaResponse);
 
             try
             {
@@ -172,7 +177,7 @@ namespace SITConnect
                         string jsonResponse = readStream.ReadToEnd();
 
                         JavaScriptSerializer js = new JavaScriptSerializer();
-                        Registration jsonObject = js.Deserialize<Registration>(jsonResponse);
+                        Login jsonObject = js.Deserialize<Login>(jsonResponse);
                         result = Convert.ToBoolean(jsonObject.success);
                     }
                 }

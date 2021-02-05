@@ -20,12 +20,25 @@ namespace SITConnect
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["Email"] != null)
-            {
-                email_info = (string)Session["Email"];
 
-                displayUserProfile(email_info);
+            if (Session["Email"] != null && Session["AuthToken"] != null && Request.Cookies["AuthToken"] != null)
+            {
+                if (!Session["AuthToken"].ToString().Equals(Request.Cookies["AuthToken"].Value))
+                {
+                    Response.Redirect("Login.aspx", false);
+                }
+                if (Session["Email"] != null)
+                {
+                    email_info = (string)Session["Email"];
+
+                    displayUserProfile(email_info);
+                }
             }
+            else
+            {
+                Response.Redirect("Login.aspx", false);
+            }
+            
         }
 
         protected string decryptData(byte[] cipherText)
